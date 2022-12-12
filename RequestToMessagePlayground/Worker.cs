@@ -8,7 +8,7 @@ public class Worker
 
     static Worker()
     {
-        foreach (var i in Enumerable.Range(0, 5))
+        foreach (var i in Enumerable.Range(0, 5)) // let's pretend the CPU has 5 cores
         {
             var w = new Worker();
             var t = new Thread(() => w.ConsumerLoop());
