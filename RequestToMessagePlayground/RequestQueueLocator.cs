@@ -14,4 +14,10 @@ public struct RequestQueueLocator
     public static readonly RequestQueueLocator Invalid = new(-1, -1);
 
     public bool IsValid => Thread >= 0;
+
+    public void Free()
+    {
+        if (IsValid)
+            RequestQueue.Free(this);
+    }
 }

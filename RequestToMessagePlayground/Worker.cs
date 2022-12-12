@@ -30,7 +30,7 @@ public class Worker
             
             var loc = MyChannel.Reader.ReadAsync().AsTask().Result;
 
-            Thread.Sleep(TimeSpan.FromMilliseconds(500));
+            Thread.Sleep(TimeSpan.FromMilliseconds(5000));
 
 
             RequestQueue.Get(loc).Writer.WriteAsync("answer").AsTask().Wait();
