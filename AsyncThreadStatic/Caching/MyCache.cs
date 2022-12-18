@@ -85,15 +85,11 @@ public struct MyCacheAccessor
 {
     
     private static int _counter;
-    [ThreadStatic]
     private static int _myThreadId;
     
     public MyCacheAccessor()
     {
-        if (_myThreadId == 0)
-        {
-            _myThreadId = Interlocked.Increment(ref _counter) % MyCacheStore.MaxThreads;
-        }
+        _myThreadId = Interlocked.Increment(ref _counter) % MyCacheStore.MaxThreads;
     }
 
     public async Task With<T>(CancellationToken t, T state, Action<T, Cache> action)

@@ -1,5 +1,7 @@
+using System.Text.Json.Serialization;
 using AsyncThreadStatic.Caching;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 
 namespace AsyncThreadStatic.Controllers;
 
@@ -155,7 +157,10 @@ public class WeatherForecastController : ControllerBase
 
             list.Add($"Task.Factory.StartNew {MyThreadId} {Thread.CurrentThread.ManagedThreadId}");
 
-            cache["a"] = "b";
+            
+            list.Add($"Task.Factory.StartNew {MyThreadId} {JsonConvert.SerializeObject(cache)}");
+            
+            cache["a"] = $"{DateTimeOffset.Now}";
         });
 
         
@@ -178,7 +183,9 @@ public class WeatherForecastController : ControllerBase
 
             list.Add($"Task.Factory.StartNew 2 {MyThreadId} {Thread.CurrentThread.ManagedThreadId}");
 
-            cache["a"] = "b";
+            list.Add($"Task.Factory.StartNew {MyThreadId} {JsonConvert.SerializeObject(cache)}");
+            
+            cache["a"] = $"{DateTimeOffset.Now}";
         });
 
         return list;
