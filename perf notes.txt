@@ -1,2 +1,7 @@
 counters:
 https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-counters
+
+bombardier
+	https://github.com/codesenberg/bombardier
+
+https://learn.microsoft.com/en-us/shows/on-net/aspnet-core-series-performance-testing-techniques
