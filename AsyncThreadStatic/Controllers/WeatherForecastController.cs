@@ -1,9 +1,10 @@
+using AsyncThreadStatic.Caching;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AsyncThreadStatic.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("[controller]/[action]")]
 public class WeatherForecastController : ControllerBase
 {
     private static int Counter;
@@ -29,6 +30,7 @@ public class WeatherForecastController : ControllerBase
 
         try
         {
+          
             var s = new MySynchronizationContext();
             var list = new List<string>();
             
@@ -78,6 +80,112 @@ public class WeatherForecastController : ControllerBase
         }
     }
 
+    [HttpGet(Name = "GetWeatherForecast2")]
+    public async ValueTask<IEnumerable<string>> Get2(CancellationToken t)
+    {
+
+        var ts = new MyTaskScheduler();
+
+        var list = new List<string>();
+
+        await Task.Factory.StartNew(() =>
+        {
+
+            if (MyThreadId == 0)
+            {
+                MyThreadId = Interlocked.Increment(ref Counter);
+            }
+        
+        
+            Console.WriteLine($"Task.Factory.StartNew {Thread.CurrentThread.ManagedThreadId}");
+
+            list.Add($"Task.Factory.StartNew thread {((SynchronizationContext.Current as MySynchronizationContext)?.MyThreadId.ToString() ?? "null" )} {Thread.CurrentThread.ManagedThreadId}");
+
+            list.Add($"Task.Factory.StartNew {MyThreadId} {Thread.CurrentThread.ManagedThreadId}");
+
+        }, t, TaskCreationOptions.None, ts);
+        
+      
+
+        await BuildList(list);
+
+        
+        Console.WriteLine($"after async run {Thread.CurrentThread.ManagedThreadId}");
+
+        list.Add($"after async run thread {((SynchronizationContext.Current as MySynchronizationContext)?.MyThreadId.ToString() ?? "null" )} {Thread.CurrentThread.ManagedThreadId}");
+
+        list.Add($"{MyThreadId} {Thread.CurrentThread.ManagedThreadId}");
+        
+        
+        await Task.Factory.StartNew(() =>
+        {
+
+            if (MyThreadId == 0)
+            {
+                MyThreadId = Interlocked.Increment(ref Counter);
+            }
+        
+        
+            Console.WriteLine($"Task.Factory.StartNew 2 {Thread.CurrentThread.ManagedThreadId}");
+
+            list.Add($"Task.Factory.StartNew 2 thread {((SynchronizationContext.Current as MySynchronizationContext)?.MyThreadId.ToString() ?? "null" )} {Thread.CurrentThread.ManagedThreadId}");
+
+            list.Add($"Task.Factory.StartNew 2 {MyThreadId} {Thread.CurrentThread.ManagedThreadId}");
+
+        }, t, TaskCreationOptions.None, ts);
+
+        return list;
+     
+    }
+    
+    
+    [HttpGet(Name = "GetWeatherForecast3")]
+    public async ValueTask<IEnumerable<string>> Get3(CancellationToken t)
+    {
+
+        var cacheStore = MyCacheStore.Get();
+
+        var list = new List<string>();
+
+        await cacheStore.With(t, list, (list, cache) =>
+        {
+            Console.WriteLine($"Task.Factory.StartNew {Thread.CurrentThread.ManagedThreadId}");
+
+            list.Add($"Task.Factory.StartNew thread {((SynchronizationContext.Current as MySynchronizationContext)?.MyThreadId.ToString() ?? "null" )} {Thread.CurrentThread.ManagedThreadId}");
+
+            list.Add($"Task.Factory.StartNew {MyThreadId} {Thread.CurrentThread.ManagedThreadId}");
+
+            cache["a"] = "b";
+        });
+
+        
+      
+
+        await BuildList(list);
+
+        
+        Console.WriteLine($"after async run {Thread.CurrentThread.ManagedThreadId}");
+
+        list.Add($"after async run thread {((SynchronizationContext.Current as MySynchronizationContext)?.MyThreadId.ToString() ?? "null" )} {Thread.CurrentThread.ManagedThreadId}");
+
+        list.Add($"{MyThreadId} {Thread.CurrentThread.ManagedThreadId}");
+        
+        await cacheStore.With(t, list, (list, cache) =>
+        {
+            Console.WriteLine($"Task.Factory.StartNew 2 {Thread.CurrentThread.ManagedThreadId}");
+
+            list.Add($"Task.Factory.StartNew 2 thread {((SynchronizationContext.Current as MySynchronizationContext)?.MyThreadId.ToString() ?? "null" )} {Thread.CurrentThread.ManagedThreadId}");
+
+            list.Add($"Task.Factory.StartNew 2 {MyThreadId} {Thread.CurrentThread.ManagedThreadId}");
+
+            cache["a"] = "b";
+        });
+
+        return list;
+     
+    }
+
+    
     private static async Task BuildList(List<string> list)
     {
   

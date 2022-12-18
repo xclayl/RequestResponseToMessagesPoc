@@ -1,4 +1,5 @@
 using AsyncThreadStatic;
+using AsyncThreadStatic.Caching;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,4 +25,5 @@ app.UseAuthorization();
 
 app.MapControllers();
 MySynchronizationContext.Shutdown = app.Lifetime.ApplicationStopping;
+MyCacheStore.Shutdown = app.Lifetime.ApplicationStopping;
 app.Run();
