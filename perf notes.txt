@@ -1,7 +1,14 @@
 counters:
 https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-counters
+	 ./dotnet-counters monitor  -p 1 --counters Microsoft.AspNetCore.Hosting,System.Runtime
+	 /root/.dotnet/tools/dotnet-counters monitor  -p 1 --counters Microsoft.AspNetCore.Hosting,System.Runtime
+
+
+
 
 bombardier
 	https://github.com/codesenberg/bombardier
+		.\bombardier-windows-amd64.exe  -c 200 -d 10s -l http://localhost:5000/Perf/Get?q=abc
+		.\bombardier-windows-amd64.exe  -c 800 -d 10s -l http://localhost:5000/Perf/Get2/Get2?q=abc
 
 https://learn.microsoft.com/en-us/shows/on-net/aspnet-core-series-performance-testing-techniques

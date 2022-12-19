@@ -4,7 +4,7 @@ namespace AsyncThreadStatic.Caching;
 
 public static class MyCacheStore
 {
-    public const int MaxThreads = 4;
+    public const int MaxThreads = 3;
     public static readonly IReadOnlyList<CacheTaskScheduler> TaskSchedulers
         = Enumerable.Range(0, MaxThreads)
             .Select(i => new CacheTaskScheduler(i))
@@ -42,9 +42,9 @@ public class CacheTaskScheduler : TaskScheduler
             while (true)
             {
                 var work = Channel.Receive(MyCacheStore.Shutdown);
-                Console.WriteLine($"-- Running on {_myThreadId} {Thread.CurrentThread.ManagedThreadId}");
+                // Console.WriteLine($"-- Running on {_myThreadId} {Thread.CurrentThread.ManagedThreadId}");
                 TryExecuteTask(work);
-                Console.WriteLine($"-- Finished Running on {_myThreadId} {Thread.CurrentThread.ManagedThreadId}");
+                // Console.WriteLine($"-- Finished Running on {_myThreadId} {Thread.CurrentThread.ManagedThreadId}");
             }
         }
         catch (OperationCanceledException)
@@ -70,7 +70,7 @@ public class CacheTaskScheduler : TaskScheduler
 
     protected override void QueueTask(Task task)
     {
-        Console.WriteLine($"-- QueueTask");
+        // Console.WriteLine($"-- QueueTask");
         Channel.Post(task);
     }
 
@@ -92,7 +92,7 @@ public struct MyCacheAccessor
         _myThreadId = Interlocked.Increment(ref _counter) % MyCacheStore.MaxThreads;
     }
 
-    public async Task With<T>(CancellationToken t, T state, Action<T, Cache> action)
+    public async ValueTask With<T>(CancellationToken t, T state, Action<T, Cache> action)
     {
         await Task.Factory.StartNew(() => action(state, MyCacheStore.ThreadCaches[_myThreadId]),
             t, TaskCreationOptions.None, MyCacheStore.TaskSchedulers[_myThreadId]);
