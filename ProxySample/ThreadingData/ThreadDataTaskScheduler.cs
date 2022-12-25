@@ -7,18 +7,18 @@ namespace ProxySample.ThreadingData;
 public class ThreadDataTaskScheduler //: TaskScheduler
 {
     private readonly int _myThreadId;
-    private const short MaxSlotsPerThread = 10;
+    private const short MaxQueuedThreads = 10;
     private readonly BufferBlock<(short, Func<object>)> Channel = new(new DataflowBlockOptions()
     {
-        BoundedCapacity = MaxSlotsPerThread 
+        BoundedCapacity = MaxQueuedThreads 
     });
 
 
-    private readonly IReadOnlyList<BufferBlock<object?>> _slots = Enumerable.Range(0, MaxSlotsPerThread).Select(i => new BufferBlock<object?>(new DataflowBlockOptions()
+    private readonly IReadOnlyList<BufferBlock<object?>> _slots = Enumerable.Range(0, MaxQueuedThreads).Select(i => new BufferBlock<object?>(new DataflowBlockOptions()
     {
-        BoundedCapacity = 10
+        BoundedCapacity = 3
     })).ToArray();
-    private readonly ConcurrentBag<short> _freeSlots = new ConcurrentBag<short>(Enumerable.Range(0, MaxSlotsPerThread).Select(i => (short)i));
+    private readonly ConcurrentBag<short> _freeSlots = new ConcurrentBag<short>(Enumerable.Range(0, MaxQueuedThreads).Select(i => (short)i));
     // private readonly ConcurrentBag<short> _toFreeSlots = new();
 
     public ThreadDataTaskScheduler(int myThreadId)
@@ -93,7 +93,7 @@ public class ThreadDataTaskScheduler //: TaskScheduler
         
         if (!mustSucceed)
         {
-            if (_freeSlots.Count < _slots.Count / 2)
+            if (Channel.Count > 2)
             {
                 return null;
             }
@@ -101,31 +101,39 @@ public class ThreadDataTaskScheduler //: TaskScheduler
         
         if (_freeSlots.TryTake(out var slot))
         {
-            if (Channel.Post((slot, task)))
+            try
             {
-                var r = await _slots[slot].ReceiveAsync();
-                _freeSlots.Add(slot);
-                return r;
+                if (Channel.Post((slot, task)))
+                {
+                    return await _slots[slot].ReceiveAsync();
+                }
             }
-            _freeSlots.Add(slot);
+            finally
+            {
+                _freeSlots.Add(slot);
+            }
             // await Console.Out.WriteLineAsync("not posted to channel");
         }
-        else
-        {
-            // await Console.Out.WriteLineAsync("not taken free slot");
-        }
+        // else
+        // {
+        //     // await Console.Out.WriteLineAsync("not taken free slot");
+        // }
 
         while (mustSucceed)
         {
-            if (_freeSlots.TryTake(out var slot2))
+            if (_freeSlots.TryTake(out slot))
             {
-                if (Channel.Post((slot2, task)))
+                try
                 {
-                    var r = await _slots[slot2].ReceiveAsync();
-                    _freeSlots.Add(slot2);
-                    return r;
+                    if (Channel.Post((slot, task)))
+                    {
+                        return await _slots[slot].ReceiveAsync();
+                    }
                 }
-                _freeSlots.Add(slot2);
+                finally
+                {
+                    _freeSlots.Add(slot);
+                }
             }
 
             await Task.Delay(5);
