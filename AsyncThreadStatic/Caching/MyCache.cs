@@ -85,7 +85,7 @@ public struct MyCacheAccessor
 {
     
     private static int _counter;
-    private static int _myThreadId;
+    private int _myThreadId;
     
     public MyCacheAccessor()
     {
@@ -94,7 +94,8 @@ public struct MyCacheAccessor
 
     public async ValueTask With<T>(CancellationToken t, T state, Action<T, Cache> action)
     {
-        await Task.Factory.StartNew(() => action(state, MyCacheStore.ThreadCaches[_myThreadId]),
+        var myThreadId = _myThreadId;
+        await Task.Factory.StartNew(() => action(state, MyCacheStore.ThreadCaches[myThreadId]),
             t, TaskCreationOptions.None, MyCacheStore.TaskSchedulers[_myThreadId]);
     }
 }

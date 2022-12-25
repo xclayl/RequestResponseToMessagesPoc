@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RequestToMessagePlayground"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AsyncThreadStatic", "AsyncThreadStatic\AsyncThreadStatic.csproj", "{FEB5637B-2F14-416A-AF43-CEAF8B939963}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProxySample", "ProxySample\ProxySample.csproj", "{82849C3F-8386-491B-8EFB-39C827A84952}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{FEB5637B-2F14-416A-AF43-CEAF8B939963}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FEB5637B-2F14-416A-AF43-CEAF8B939963}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FEB5637B-2F14-416A-AF43-CEAF8B939963}.Release|Any CPU.Build.0 = Release|Any CPU
+		{82849C3F-8386-491B-8EFB-39C827A84952}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{82849C3F-8386-491B-8EFB-39C827A84952}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{82849C3F-8386-491B-8EFB-39C827A84952}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{82849C3F-8386-491B-8EFB-39C827A84952}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
