@@ -27,31 +27,6 @@ public readonly struct ThreadDataAccessor
         _taskSchedulers = taskSchedulers;
     }
 
-    // public async ValueTask<TR> WithResult<T, TR>(CancellationToken t, T state, Func<T, ThreadDatum, TR> action) where T:struct where TR:struct
-    // {
-    //     var threadData = _threadData;
-    //     var myThreadId = _myThreadId;
-    //     TR val = new();
-    //     if (!await _taskSchedulers[_myThreadId].TryQueueTask(true, () => val = action(state, threadData[myThreadId])))
-    //     {
-    //         throw new Exception("This should never happen");
-    //     }
-    //
-    //     return val;
-    // }
-    // public async ValueTask<TR?> TryWithResult<T, TR>(CancellationToken t, T state, Func<T, ThreadDatum, TR> action) where T:struct where TR:struct
-    // {
-    //     var threadData = _threadData;
-    //     var myThreadId = _myThreadId;
-    //     TR val = new();
-    //     if (!await _taskSchedulers[_myThreadId].TryQueueTask(false, () => val = action(state, threadData[myThreadId])))
-    //     {
-    //         return null;
-    //     }
-    //
-    //     return val;
-    // }
-
     private class Box<T> where T:struct
     {
         public T Val;
@@ -62,7 +37,7 @@ public readonly struct ThreadDataAccessor
         var threadData = _threadData;
         var myThreadId = _myThreadId;
 
-        var val = await _taskSchedulers[_myThreadId].TryQueueTask(true, () =>
+        var val = await _taskSchedulers[_myThreadId].TryQueueTask(true, t,  () =>
         {
             TR v = action(threadData[myThreadId]);
             return new Box<TR>() { Val = v };
@@ -80,7 +55,7 @@ public readonly struct ThreadDataAccessor
         var myThreadId = _myThreadId;
         
 
-        var val = await _taskSchedulers[_myThreadId].TryQueueTask(false, () =>
+        var val = await _taskSchedulers[_myThreadId].TryQueueTask(false, t, () =>
         {
             TR v = action(threadData[myThreadId]);
             return new Box<TR>() { Val = v };
@@ -92,36 +67,14 @@ public readonly struct ThreadDataAccessor
 
         return val.Val;
     }
-    // public async ValueTask With<T>(CancellationToken t, T state, Action<T, ThreadDatum> action) where T:struct 
-    // {
-    //     var threadData = _threadData;
-    //     var myThreadId = _myThreadId;
-    //     
-    //     if (!await _taskSchedulers[_myThreadId].TryQueueTask(true, () => action(state, threadData[myThreadId])))
-    //     {
-    //         throw new Exception("This should never happen");
-    //     }
-    //
-    // }
-    // public async ValueTask<bool> TryWith<T>(CancellationToken t, T state, Action<T, ThreadDatum> action) where T:struct 
-    // {
-    //     var threadData = _threadData;
-    //     var myThreadId = _myThreadId;
-    //     
-    //     if (!await _taskSchedulers[_myThreadId].TryQueueTask(false, () => action(state, threadData[myThreadId])))
-    //     {
-    //         return false;
-    //     }
-    //
-    //     return true;
-    // }
-    public async ValueTask With<T>(T state, Action<T, ThreadDatum> action) where T:struct 
+   
+    public async ValueTask With<T>(CancellationToken t, T state, Action<T, ThreadDatum> action) where T:struct 
     {
         var threadData = _threadData;
         var myThreadId = _myThreadId;
         
         
-        var val = await _taskSchedulers[_myThreadId].TryQueueTask(true, () =>
+        var val = await _taskSchedulers[_myThreadId].TryQueueTask(true, t,  () =>
         {
             action(state, threadData[myThreadId]);
             return new Box<int>() { Val = 0 };
@@ -133,61 +86,23 @@ public readonly struct ThreadDataAccessor
 
 
     }
-    // public async ValueTask<bool> TryWith<T>(T state, Action<T, ThreadDatum> action) where T:struct 
-    // {
-    //     var threadData = _threadData;
-    //     var myThreadId = _myThreadId;
-    //     
-    //     if (!await _taskSchedulers[_myThreadId].TryQueueTask(false, () => action(state, threadData[myThreadId])))
-    //     {
-    //         return false;
-    //     }
-    //
-    //     return true;
-    // }
-    // public async ValueTask With(CancellationToken t, Action<ThreadDatum> action)  
-    // {
-    //     var threadData = _threadData;
-    //     var myThreadId = _myThreadId;
-    //     
-    //     if (!await _taskSchedulers[_myThreadId].TryQueueTask(true, () => action(threadData[myThreadId])))
-    //     {
-    //         throw new Exception("This should never happen");
-    //     }
-    // }
-    // public async ValueTask<bool> TryWith(CancellationToken t, Action<ThreadDatum> action)  
-    // {
-    //     var threadData = _threadData;
-    //     var myThreadId = _myThreadId;
-    //     
-    //     if (!await _taskSchedulers[_myThreadId].TryQueueTask(false, () => action(threadData[myThreadId])))
-    //     {
-    //         return false;
-    //     }
-    //
-    //     return true;
-    // }
-    // public async ValueTask With(Action<ThreadDatum> action)  
-    // {
-    //     var threadData = _threadData;
-    //     var myThreadId = _myThreadId;
-    //     
-    //     if (!await _taskSchedulers[_myThreadId].TryQueueTask(true, () => action(threadData[myThreadId])))
-    //     {
-    //         throw new Exception("This should never happen");
-    //     }
-    //     
-    // }
-    // public async ValueTask<bool> TryWith(Action<ThreadDatum> action)  
-    // {
-    //     var threadData = _threadData;
-    //     var myThreadId = _myThreadId;
-    //     
-    //     if (!await _taskSchedulers[_myThreadId].TryQueueTask(true, () => action(threadData[myThreadId])))
-    //     {
-    //         return false;
-    //     }
-    //
-    //     return false;
-    // }
+    
+    public async ValueTask With(CancellationToken t, Action<ThreadDatum> action)  
+    {
+        var threadData = _threadData;
+        var myThreadId = _myThreadId;
+        
+        
+        var val = await _taskSchedulers[_myThreadId].TryQueueTask(true, t,  () =>
+        {
+            action(threadData[myThreadId]);
+            return new Box<int>() { Val = 0 };
+        }) as Box<int>;
+        if (val == null)
+        {
+            throw new Exception("This should never happen");
+        }
+
+
+    }
 }

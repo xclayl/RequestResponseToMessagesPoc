@@ -7,14 +7,14 @@ namespace ProxySample.ThreadingData;
 public class ThreadDataTaskScheduler //: TaskScheduler
 {
     private readonly int _myThreadId;
-    private const short MaxQueuedThreads = 10;
+    private const short MaxQueuedThreads = 50;
     private readonly BufferBlock<(short, Func<object>)> Channel = new(new DataflowBlockOptions()
     {
         BoundedCapacity = MaxQueuedThreads 
     });
 
 
-    private readonly IReadOnlyList<BufferBlock<object?>> _slots = Enumerable.Range(0, MaxQueuedThreads).Select(i => new BufferBlock<object?>(new DataflowBlockOptions()
+    private readonly IReadOnlyList<BufferBlock<(object?, Exception?)>> _slots = Enumerable.Range(0, MaxQueuedThreads).Select(i => new BufferBlock<(object?, Exception?)>(new DataflowBlockOptions()
     {
         BoundedCapacity = 3
     })).ToArray();
@@ -38,28 +38,18 @@ public class ThreadDataTaskScheduler //: TaskScheduler
 
                 try
                 {
-                    object o = null;
-                    try
-                    {
-                        // Console.WriteLine($"-- Running on {_myThreadId} {Thread.CurrentThread.ManagedThreadId}");
-                        o = work.Item2();
-                        // Console.WriteLine($"-- Finished Running on {_myThreadId} {Thread.CurrentThread.ManagedThreadId}");
+                    // Console.WriteLine($"-- Running on {_myThreadId} {Thread.CurrentThread.ManagedThreadId}");
+                    var o = work.Item2();
+                    // Console.WriteLine($"-- Finished Running on {_myThreadId} {Thread.CurrentThread.ManagedThreadId}");
 
-                    }
-                    // catch (Exception e)
-                    // {
-                    //     Console.WriteLine(e.Message);
-                    //     Console.WriteLine(e.StackTrace);
-                    // }
-                    finally
-                    {
-                        _slots[work.Item1].Post(o);
-                    }
+                    _slots[work.Item1].Post((o, null));
                 }
                 catch (Exception e)
                 {
                     Console.WriteLine(e.Message);
                     Console.WriteLine(e.StackTrace);
+                    
+                    _slots[work.Item1].Post((null, e));
                 }
 
             }
@@ -70,22 +60,8 @@ public class ThreadDataTaskScheduler //: TaskScheduler
         Console.WriteLine($"-- Thread {_myThreadId} {Thread.CurrentThread.ManagedThreadId} exited");
     }
 
-    // protected IEnumerable<Action>? GetScheduledTasks()
-    // {
-    //     if (Channel.TryReceiveAll(out var list))
-    //     {
-    //         foreach (var item in list)
-    //         {
-    //             Channel.Post(item);
-    //         }
-    //
-    //         return list;
-    //     }
-    //
-    //     return null;
-    // }
 
-    public async ValueTask<object?> TryQueueTask(bool mustSucceed, Func<object> task)
+    public async ValueTask<object?> TryQueueTask(bool mustSucceed, CancellationToken t, Func<object> task)
     {
         // Console.WriteLine($"-- QueueTask");
 
@@ -98,14 +74,36 @@ public class ThreadDataTaskScheduler //: TaskScheduler
                 return null;
             }
         }
+
+        if (t.IsCancellationRequested)
+        {
+            if (mustSucceed)
+                throw new OperationCanceledException();
+            
+            return null;
+        }
         
         if (_freeSlots.TryTake(out var slot))
         {
             try
             {
+                if (t.IsCancellationRequested)
+                {
+                    if (mustSucceed)
+                        throw new OperationCanceledException();
+            
+                    return null;
+                }
+
+
+                _slots[slot].TryReceiveAll(out _);
+                
                 if (Channel.Post((slot, task)))
                 {
-                    return await _slots[slot].ReceiveAsync();
+                    var r = await _slots[slot].ReceiveAsync(t);
+                    if (r.Item2 != null)
+                        throw new AggregateException(r.Item2);
+                    return r.Item1;
                 }
             }
             finally
@@ -121,13 +119,25 @@ public class ThreadDataTaskScheduler //: TaskScheduler
 
         while (mustSucceed)
         {
+
+            if (t.IsCancellationRequested)
+            {
+                if (mustSucceed)
+                    throw new OperationCanceledException();
+            
+                return null;
+            }
+            
             if (_freeSlots.TryTake(out slot))
             {
                 try
                 {
                     if (Channel.Post((slot, task)))
                     {
-                        return await _slots[slot].ReceiveAsync();
+                        var r = await _slots[slot].ReceiveAsync();
+                        if (r.Item2 != null)
+                            throw new AggregateException(r.Item2);
+                        return r.Item1;
                     }
                 }
                 finally
@@ -144,9 +154,5 @@ public class ThreadDataTaskScheduler //: TaskScheduler
         return null;
     }
 
-    // protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued)
-    // {
-    //     return false;
-    // }
 
 }

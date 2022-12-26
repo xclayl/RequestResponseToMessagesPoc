@@ -20,8 +20,14 @@ public static class WebHandler
     }
     
     
-    public static async Task<IResult> Get(HttpRequest req, CancellationToken t)
+    public static async Task<IResult> Get(HttpRequest req, CancellationToken httpCt)
     {
+
+        var t = CancellationTokenSource.CreateLinkedTokenSource(
+            httpCt,
+            new CancellationTokenSource(TimeSpan.FromSeconds(1)).Token
+        ).Token;
+
 
         var timings = new Timings
         {
@@ -40,7 +46,7 @@ public static class WebHandler
             if (data.ConcurrentRequests >= data.MaxConcurrentRequests)
             {
                 data.CompletedRequests++;
-                data.RejectedRequests++;
+                data.ConcurrentRejectionRequests++;
                 overloaded = true;
                 return (overloaded, startThread);
             }
@@ -52,10 +58,10 @@ public static class WebHandler
 
         if (info == null)
         {
-            await dataStore.With(0, (rTimings, data) =>
+            await dataStore.With(t, data =>
             {
                 data.CompletedRequests++;
-                data.RejectedRequests++;
+                data.QueueRejectionRequests++;
             });
             
             return Results.Content("<html><body><h1>rejected</h1></body></html>", new MediaTypeHeaderValue("text/html"));
@@ -77,7 +83,7 @@ public static class WebHandler
         {
             timings.End = Environment.TickCount64;
             
-            await dataStore.With(timings, (rTimings, data) =>
+            await dataStore.With(t, timings, (rTimings, data) =>
             {
                 data.CompletedRequests++;
                 data.ConcurrentRequests--;
@@ -97,7 +103,8 @@ public static class WebHandler
     private struct GetStatsData
     {
         public int CompletedRequests;
-        public int RejectedRequests;
+        public int QueueRejectionRequests;
+        public int ConcurrentRejectionRequests;
         public int SuccessfulRequests;
         public long SucStartThreadSum;
         public long SucEndSum;
@@ -111,7 +118,8 @@ public static class WebHandler
             return new GetStatsData
             {
                 CompletedRequests = data.CompletedRequests,
-                RejectedRequests = data.RejectedRequests,
+                QueueRejectionRequests = data.QueueRejectionRequests,
+                ConcurrentRejectionRequests = data.ConcurrentRejectionRequests,
                 SuccessfulRequests = data.SuccessfulRequests,
                 SucStartThreadSum = data.SucStartThreadSum,
                 SucEndSum = data.SucEndSum,
@@ -122,7 +130,8 @@ public static class WebHandler
         var d = await Task.WhenAll(tasks);
 
         var totalRequests = d.Sum(e => e.CompletedRequests);
-        var totalRejected = d.Sum(e => e.RejectedRequests);
+        var totalQueueRejected = d.Sum(e => e.QueueRejectionRequests);
+        var totalConcurrentRejected = d.Sum(e => e.ConcurrentRejectionRequests);
         var totalSuccessful = d.Sum(e => e.SuccessfulRequests);
         var sucStartThreadSum = d.Sum(e => e.SucStartThreadSum);
         var sucEndSum = d.Sum(e => e.SucEndSum);
@@ -141,7 +150,8 @@ public static class WebHandler
         
         return Results.Content($@"<html><body><h1>stats</h1>
             <div>Total {totalRequests}</div>
-            <div>Rej {totalRejected}</div>
+            <div>totalQueueRejected {totalQueueRejected}</div>
+            <div>totalConcurrentRejected {totalConcurrentRejected}</div>
             <div>totalSuccessful {totalSuccessful}</div>
             <div>sucStartThreadAvg {sucStartThreadAvg}</div>
             <div>sucEndAvg {sucEndAvg}</div>

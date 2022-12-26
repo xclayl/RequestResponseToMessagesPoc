@@ -3,10 +3,11 @@
 public class ThreadDatum
 {
     public int ConcurrentRequests;
-    public int MaxConcurrentRequests = 10;
+    public int MaxConcurrentRequests = 50;
 
     public int CompletedRequests;
-    public int RejectedRequests;
+    public int QueueRejectionRequests;
+    public int ConcurrentRejectionRequests;
     public int SuccessfulRequests;
 
     public long SucStartThreadSum;
