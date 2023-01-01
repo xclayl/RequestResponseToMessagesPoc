@@ -24,13 +24,16 @@ builder.Services.AddRateLimiter(o =>
 
 });
 
+
 var app = builder.Build();
 
 app.UseRateLimiter();
-app.MapGet("/", async () =>
+app.MapGet("/", async (HttpRequest req, HttpResponse resp) =>
 {
     await Task.Delay(50);
-    return "Hello World!";
+    
+    
+    return Results.Text($"Hello World! {req.Protocol}");
 }).RequireRateLimiting(concurrencyPolicy);
 
 

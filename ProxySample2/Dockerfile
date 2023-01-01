@@ -1,4 +1,6 @@
-﻿FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS base
+﻿#  docker build -t http2.azurecr.io/sample/psample:1.0 -f ProxySample2/Dockerfile . 
+#  docker push http2.azurecr.io/sample/psample:1.0 
+FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS base
 WORKDIR /app
 EXPOSE 80
 EXPOSE 443
