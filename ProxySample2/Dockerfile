@@ -1,4 +1,6 @@
 ﻿#  docker build -t http2.azurecr.io/sample/psample:1.0 -f ProxySample2/Dockerfile . 
+#  az login
+#  az acr login --name http2
 #  docker push http2.azurecr.io/sample/psample:1.0 
 FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS base
 WORKDIR /app

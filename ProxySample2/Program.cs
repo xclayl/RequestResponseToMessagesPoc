@@ -1,6 +1,9 @@
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 
+
+var guid = Guid.NewGuid();
+
 var builder = WebApplication.CreateBuilder(args);
 
 
@@ -10,7 +13,7 @@ builder.Services.AddRateLimiter(o =>
 {
     o.AddConcurrencyLimiter(policyName: concurrencyPolicy, options =>
     {
-        options.PermitLimit = 50;
+        options.PermitLimit = 2;
         options.QueueProcessingOrder = QueueProcessingOrder.NewestFirst;
         options.QueueLimit = 0;
     });
@@ -31,9 +34,9 @@ app.UseRateLimiter();
 app.MapGet("/", async (HttpRequest req, HttpResponse resp) =>
 {
     await Task.Delay(50);
+
     
-    
-    return Results.Text($"Hello World! {req.Protocol}");
+    return Results.Text($"Hello World! {req.Protocol} {guid}");
 }).RequireRateLimiting(concurrencyPolicy);
 
 
